@@ -9,6 +9,9 @@ export function findUser(wsArray: ClientsArray[], name: string): findUserReturn 
     return {success: false, index: null}
 }
 
+
+
+
 export interface findUserReturn {
     success: boolean,
     index: number | null

@@ -1,38 +1,54 @@
-import { WebSocketServer } from "ws";
+import { WebSocket, WebSocketServer } from "ws";
 import { InitialConnection, Message } from "./types/message.type";
 import { ChannelsList } from "./types/channelsObject.type";
-import { initialConnectionController } from "./controllers/initialConnection.controller";
+import { initialConnectionController } from "./controllers/initialConnection.controller.js";
 import { ClientsArray } from "./types/clientsArray.type";
+import { findUser } from "./utils/clientsUtil.js";
+import { messageInChannelController } from "./controllers/messageInChannel.controller.js";
 
 const wss = new WebSocketServer({ port: 5000 });
 
+interface IHandlers {
+    [key: string]: (ws: WebSocket, message: Message, clients: ClientsArray[]) => Promise<string>
+}
 
+const handlers: IHandlers = {
+    "InitialConnection": initialConnectionController,
+    "MessageInChannel": messageInChannelController,
+    
+}
+
+const clients: ClientsArray[] = []
 
 wss.on("connection", (ws) => {
   console.log("Client connected");
 
-  const clients: ClientsArray[] = []
-
-  ws.send("Connection has completed");
-
   ws.on("message", async (message: string) => {
-    const json = JSON.parse(message.toString());
+    let json;
+    try{ json = JSON.parse(message.toString()); }
+    catch(err){ ws.send(JSON.stringify({header:"error", error:"Ivalid JSON"})); }
+    
     if(!json.header || typeof json.header !== 'string'){
         ws.send(JSON.stringify({header:"error", error: "header is required"}));
         return;
     }
+    console.log(json.header, "header")
     const messageData = json as Message;
-    switch(messageData.header){
-        case "ChatConnection":{
-          break;
-        }
-        case "InitialConnection": {
-          initialConnectionController(ws, messageData as InitialConnection, clients);
-        }
+    const handler = handlers[messageData.header];
+    if(handler){
+        const response = await handler(ws, messageData, clients);
+        ws.send(response);
     }
+    else{
+        ws.send(JSON.stringify({"header": "error", error: "invalid message"}))
+    }
+    
   });
 
   ws.on("close", () => {
+    const client = clients.find(el => el.client === ws);
+    if(client) client.connected = false;
+
     console.log("Client has disconnected");
   });
 });
