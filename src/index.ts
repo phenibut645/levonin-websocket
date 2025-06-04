@@ -5,6 +5,7 @@ import { initialConnectionController } from "./controllers/initialConnection.con
 import { ClientsArray } from "./types/clientsArray.type";
 import { findUser } from "./utils/clientsUtil.js";
 import { messageInChannelController } from "./controllers/messageInChannel.controller.js";
+import { reRenderChannels } from "./controllers/reRenderChannels.controller.js";
 
 const wss = new WebSocketServer({ port: 5000 });
 
@@ -15,6 +16,7 @@ interface IHandlers {
 const handlers: IHandlers = {
     "InitialConnection": initialConnectionController,
     "MessageInChannel": messageInChannelController,
+    "ReRenderChannels": reRenderChannels
     
 }
 
